@@ -39,8 +39,14 @@ export function ExportImportButtons() {
     };
 
     const handleDialogConfirm = () => {
-        if (onConfirm) onConfirm();
+        // Close confirm dialog first
         setDialogOpen(false);
+        // Execute the confirm action after a short delay to allow dialog to close
+        if (onConfirm) {
+            setTimeout(() => {
+                onConfirm();
+            }, 100);
+        }
     };
 
     const handleDialogCancel = () => {
