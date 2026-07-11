@@ -1,4 +1,13 @@
-import { createContext, useContext, useState, useEffect, type ReactNode, useRef } from "react";
+import {
+    createContext,
+    useContext,
+    useState,
+    useEffect,
+    type ReactNode,
+    useRef,
+    type Dispatch,
+    type SetStateAction,
+} from "react";
 
 export type Session = {
     id: number;
@@ -11,6 +20,7 @@ type TimerContextType = {
     time: number;
     isRunning: boolean;
     history: Session[];
+    setHistory: Dispatch<SetStateAction<Session[]>>;
     startTimer: () => void;
     stopTimer: () => void;
     resetTimer: () => void;
@@ -157,7 +167,17 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     };
 
     return (
-        <TimerContext.Provider value={{ time, isRunning, history, startTimer, stopTimer, resetTimer }}>
+        <TimerContext.Provider
+            value={{
+                time,
+                isRunning,
+                history,
+                setHistory,
+                startTimer,
+                stopTimer,
+                resetTimer,
+            }}
+        >
             {children}
         </TimerContext.Provider>
     );
