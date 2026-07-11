@@ -19,7 +19,7 @@ export function History() {
                 >
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
-                <h1 className="text-2xl font-medium">Session History</h1>
+                <h1 className="text-2xl font-medium">History</h1>
                 <div className="ml-auto">
                     <ExportImportButtons />
                 </div>
