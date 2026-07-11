@@ -13,7 +13,13 @@ export function ExportImportButtons() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `study-history-${new Date().toISOString().slice(0, 10)}.json`;
+
+        // Build filename with date and time (local timezone)
+        const now = new Date();
+        const datePart = now.toISOString().slice(0, 10); // YYYY-MM-DD
+        const timePart = now.toTimeString().slice(0, 8).replace(/:/g, '-'); // HH-MM-SS
+        link.download = `study-history-${datePart}-${timePart}.json`;
+
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
