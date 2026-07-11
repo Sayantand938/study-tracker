@@ -58,7 +58,7 @@ export function History() {
                                         <td className="py-3 px-4 text-white/70">{index + 1}</td>
                                         <td className="py-3 px-4">{formatTime(session.startTime)}</td>
                                         <td className="py-3 px-4">{formatTime(session.endTime)}</td>
-                                        <td className="py-3 px-4 text-right font-mono">
+                                        <td className="py-3 px-4 text-right font-sans">
                                             {formatDuration(session.duration)}
                                         </td>
                                     </tr>

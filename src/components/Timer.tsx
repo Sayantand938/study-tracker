@@ -23,7 +23,7 @@ export function Timer() {
 
     return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-black text-white">
-            <div className="text-8xl font-mono font-light tracking-wider select-none">
+            <div className="text-8xl font-sans font-light tracking-wider select-none">
                 {formatTime(time)}
             </div>
             <div className="mt-8 flex gap-4">
