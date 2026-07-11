@@ -27,11 +27,14 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         if (stored) {
             try {
                 const parsed = JSON.parse(stored);
-                return parsed.map((s: any) => ({
-                    ...s,
-                    startTime: new Date(s.startTime),
-                    endTime: new Date(s.endTime),
-                }));
+                // Parse ISO strings back to Date objects and sort ascending (oldest first)
+                return parsed
+                    .map((s: any) => ({
+                        ...s,
+                        startTime: new Date(s.startTime),
+                        endTime: new Date(s.endTime),
+                    }))
+                    .sort((a: Session, b: Session) => a.startTime.getTime() - b.startTime.getTime());
             } catch {
                 return [];
             }
@@ -39,12 +42,12 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         return [];
     });
 
-    // Persist history
+    // Persist history to localStorage
     useEffect(() => {
         localStorage.setItem("timerHistory", JSON.stringify(history));
     }, [history]);
 
-    // Timer tick
+    // Timer tick – updates time every second when running
     useEffect(() => {
         let interval: number | null = null;
         if (isRunning && startTime) {
@@ -79,7 +82,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
                     endTime,
                     duration,
                 };
-                setHistory((prev) => [session, ...prev]);
+                // Append new session to the end (oldest first order)
+                setHistory((prev) => [...prev, session]);
             }
             setIsRunning(false);
             setStartTime(null);
