@@ -8,6 +8,8 @@ export function HistoryTable() {
         return <p className="text-white/60">No sessions recorded yet.</p>;
     }
 
+    const totalDuration = history.reduce((acc, session) => acc + session.duration, 0);
+
     return (
         <div className="overflow-x-auto">
             <table className="w-full border-collapse">
@@ -34,6 +36,16 @@ export function HistoryTable() {
                         </tr>
                     ))}
                 </tbody>
+                <tfoot>
+                    <tr className="border-t border-white/30 font-medium">
+                        <td className="py-3 px-4 text-white/80">T</td>
+                        <td className="py-3 px-4 text-white/50">–</td>
+                        <td className="py-3 px-4 text-white/50">–</td>
+                        <td className="py-3 px-4 text-right font-mono text-white">
+                            {formatDuration(totalDuration)}
+                        </td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     );
