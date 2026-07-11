@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, type ReactNode, useRef } from "react";
 
 export type Session = {
     id: number;
@@ -27,7 +27,6 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         if (stored) {
             try {
                 const parsed = JSON.parse(stored);
-                // Parse ISO strings back to Date objects and sort ascending (oldest first)
                 return parsed
                     .map((s: any) => ({
                         ...s,
@@ -42,27 +41,48 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         return [];
     });
 
+    // Ref to hold the current animation frame ID so we can cancel it
+    const rafIdRef = useRef<number | null>(null);
+
     // Persist history to localStorage
     useEffect(() => {
         localStorage.setItem("timerHistory", JSON.stringify(history));
     }, [history]);
 
-    // Timer tick – updates time every second when running
+    // Timer update loop using requestAnimationFrame
     useEffect(() => {
-        let interval: number | null = null;
-        if (isRunning && startTime) {
-            interval = window.setInterval(() => {
+        const updateTimer = () => {
+            if (isRunning && startTime) {
                 const now = Date.now();
                 const elapsed = Math.floor((now - startTime.getTime()) / 1000);
-                setTime(elapsed);
-            }, 1000);
-        } else if (interval) {
-            clearInterval(interval);
-        }
-        return () => {
-            if (interval) clearInterval(interval);
+                // Only update state if the integer second changed
+                if (elapsed !== time) {
+                    setTime(elapsed);
+                }
+                // Continue the loop
+                rafIdRef.current = requestAnimationFrame(updateTimer);
+            }
         };
-    }, [isRunning, startTime]);
+
+        if (isRunning && startTime) {
+            // Start the loop
+            rafIdRef.current = requestAnimationFrame(updateTimer);
+        } else {
+            // Stop the loop
+            if (rafIdRef.current) {
+                cancelAnimationFrame(rafIdRef.current);
+                rafIdRef.current = null;
+            }
+        }
+
+        // Cleanup on unmount or when dependencies change
+        return () => {
+            if (rafIdRef.current) {
+                cancelAnimationFrame(rafIdRef.current);
+                rafIdRef.current = null;
+            }
+        };
+    }, [isRunning, startTime, time]); // time is included to compare against elapsed
 
     const startTimer = () => {
         const now = new Date();
@@ -82,7 +102,6 @@ export function TimerProvider({ children }: { children: ReactNode }) {
                     endTime,
                     duration,
                 };
-                // Append new session to the end (oldest first order)
                 setHistory((prev) => [...prev, session]);
             }
             setIsRunning(false);
@@ -93,7 +112,6 @@ export function TimerProvider({ children }: { children: ReactNode }) {
 
     const resetTimer = () => {
         if (isRunning) {
-            // Stop without saving
             setIsRunning(false);
             setStartTime(null);
             setTime(0);
