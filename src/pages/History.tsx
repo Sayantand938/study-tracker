@@ -8,7 +8,11 @@ export function History() {
     const navigate = useNavigate();
 
     const formatTime = (date: Date) => {
-        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        return date.toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+        });
     };
 
     const formatDuration = (seconds: number) => {
@@ -24,6 +28,23 @@ export function History() {
         }
     };
 
+    const getShift = (date: Date): number => {
+        const hours = date.getHours();
+        if (hours >= 0 && hours < 12) return 1;
+        if (hours >= 12 && hours < 16) return 2;
+        if (hours >= 16 && hours < 20) return 3;
+        return 4;
+    };
+
+    const shiftTotals = [0, 0, 0, 0];
+    history.forEach((session) => {
+        const shift = getShift(session.startTime);
+        shiftTotals[shift - 1] += session.duration;
+    });
+
+    const shiftLabels = ["Shift 1", "Shift 2", "Shift 3", "Shift 4"];
+    const shiftRanges = ["00:00–12:00", "12:00–16:00", "16:00–20:00", "20:00–24:00"];
+
     return (
         <div className="flex min-h-screen flex-col bg-black text-white p-6">
             <div className="flex items-center gap-4 mb-6">
@@ -36,6 +57,21 @@ export function History() {
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <h1 className="text-2xl font-medium">Session History</h1>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                {shiftTotals.map((total, index) => (
+                    <div
+                        key={index}
+                        className="bg-white/5 border border-white/10 rounded-lg p-4 text-center"
+                    >
+                        <div className="text-sm text-white/60">{shiftLabels[index]}</div>
+                        <div className="text-xs text-white/40">{shiftRanges[index]}</div>
+                        <div className="text-2xl font-mono mt-2">
+                            {formatDuration(total)}
+                        </div>
+                    </div>
+                ))}
             </div>
 
             <div className="flex-1 overflow-auto">
@@ -58,7 +94,7 @@ export function History() {
                                         <td className="py-3 px-4 text-white/70">{index + 1}</td>
                                         <td className="py-3 px-4">{formatTime(session.startTime)}</td>
                                         <td className="py-3 px-4">{formatTime(session.endTime)}</td>
-                                        <td className="py-3 px-4 text-right font-sans">
+                                        <td className="py-3 px-4 text-right font-mono">
                                             {formatDuration(session.duration)}
                                         </td>
                                     </tr>
