@@ -1,6 +1,6 @@
 // src/pages/Settings.tsx
 import { useTheme } from "@/components/theme-provider";
-import { useTimer } from "@/context/TimerContext";
+import { useTimer } from "@/hooks/useTimer";
 import { Button } from "@/components/ui/button";
 import { ExportImportButtons } from "@/components/history/ExportImportButtons";
 import { Moon, Sun, Trash2 } from "lucide-react";

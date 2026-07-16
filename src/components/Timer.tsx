@@ -1,4 +1,4 @@
-import { useTimer } from "@/context/TimerContext";
+import { useTimer } from "@/hooks/useTimer";
 import { Button } from "@/components/ui/button";
 import { Play, Square, RotateCcw } from "lucide-react";
 

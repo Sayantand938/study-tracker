@@ -1,6 +1,6 @@
 // src/pages/Dashboard.tsx
 import { ShiftWidgets } from "@/components/history/ShiftWidgets";
-import { useTimer } from "@/context/TimerContext";
+import { useTimer } from "@/hooks/useTimer";
 import { formatDuration } from "@/lib/timer-utils";
 
 // Helper: check if two dates fall on the same calendar day

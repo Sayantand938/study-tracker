@@ -1,6 +1,7 @@
 // src/components/history/HistoryTable.tsx
 import { formatTime, formatDuration } from "@/lib/timer-utils";
-import { useTimer, type Session } from "@/context/TimerContext";
+import { useTimer } from "@/hooks/useTimer";
+import { type Session } from '@/context/timer-context';
 
 export function HistoryTable({ sessions }: { sessions?: Session[] }) {
     const { history } = useTimer();

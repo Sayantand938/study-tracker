@@ -1,7 +1,7 @@
 // src/pages/History.tsx
 import { useState, useMemo } from "react";
 import { HistoryTable } from "@/components/history/HistoryTable";
-import { useTimer } from "@/context/TimerContext";
+import { useTimer } from "@/hooks/useTimer";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";

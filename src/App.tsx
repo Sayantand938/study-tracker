@@ -1,6 +1,7 @@
 // src/App.tsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { TimerProvider, useTimer } from "@/context/TimerContext";
+import { TimerProvider } from "@/context/TimerContext";
+import { useTimer } from "@/hooks/useTimer";
 import { Timer } from "@/components/Timer";
 import { History } from "@/pages/History";
 import { Dashboard } from "@/pages/Dashboard";

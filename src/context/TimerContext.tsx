@@ -1,12 +1,8 @@
 import {
-    createContext,
-    useContext,
     useState,
     useEffect,
     type ReactNode,
     useRef,
-    type Dispatch,
-    type SetStateAction,
 } from 'react';
 import {
     getAllSessions,
@@ -14,28 +10,7 @@ import {
     addSessions,
     clearAllSessions,
 } from '@/lib/db';
-
-export type Session = {
-    id: string;
-    startTime: Date;
-    endTime: Date;
-    duration: number;
-};
-
-type TimerContextType = {
-    time: number;
-    isRunning: boolean;
-    history: Session[];
-    loading: boolean;
-    setHistory: Dispatch<SetStateAction<Session[]>>;
-    replaceHistory: (newHistory: Session[]) => Promise<void>;
-    clearHistory: () => Promise<void>;
-    startTimer: () => void;
-    stopTimer: () => void;
-    resetTimer: () => void;
-};
-
-const TimerContext = createContext<TimerContextType | undefined>(undefined);
+import { TimerContext, type Session } from './timer-context';
 
 export function TimerProvider({ children }: { children: ReactNode }) {
     const [history, setHistory] = useState<Session[]>([]);
@@ -45,7 +20,6 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const load = async () => {
             try {
-                // No migration – just load from IndexedDB
                 const sessions = await getAllSessions();
                 setHistory(sessions);
             } catch (err) {
@@ -77,7 +51,6 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     });
 
     const timeRef = useRef(0);
-    // Initialize time without touching ref
     const [time, setTime] = useState(() => {
         if (isRunning && startTime) {
             return Math.floor((Date.now() - startTime.getTime()) / 1000);
@@ -195,7 +168,6 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         isProcessingRef.current = false;
     };
 
-    // New methods for bulk operations
     const replaceHistory = async (newHistory: Session[]) => {
         await clearAllSessions();
         if (newHistory.length > 0) {
@@ -227,13 +199,4 @@ export function TimerProvider({ children }: { children: ReactNode }) {
             {children}
         </TimerContext.Provider>
     );
-}
-
-// eslint-disable-next-line react-refresh/only-export-components
-export function useTimer() {
-    const context = useContext(TimerContext);
-    if (!context) {
-        throw new Error('useTimer must be used within a TimerProvider');
-    }
-    return context;
 }

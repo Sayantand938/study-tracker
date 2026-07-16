@@ -1,7 +1,8 @@
 // src/components/history/ExportImportButtons.tsx
 import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
-import { useTimer, type Session } from "@/context/TimerContext";
+import { useTimer } from "@/hooks/useTimer";
+import { type Session } from '@/context/timer-context';
 import { useRef, useState } from "react";
 import {
     Dialog,
