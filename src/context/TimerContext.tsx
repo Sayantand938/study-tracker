@@ -7,20 +7,29 @@ import {
     useRef,
     type Dispatch,
     type SetStateAction,
-} from "react";
+} from 'react';
+import {
+    getAllSessions,
+    addSession,
+    addSessions,
+    clearAllSessions,
+} from '@/lib/db';
 
 export type Session = {
     id: string;
     startTime: Date;
     endTime: Date;
-    duration: number; // in seconds
+    duration: number;
 };
 
 type TimerContextType = {
     time: number;
     isRunning: boolean;
     history: Session[];
+    loading: boolean;
     setHistory: Dispatch<SetStateAction<Session[]>>;
+    replaceHistory: (newHistory: Session[]) => Promise<void>;
+    clearHistory: () => Promise<void>;
     startTimer: () => void;
     stopTimer: () => void;
     resetTimer: () => void;
@@ -29,33 +38,34 @@ type TimerContextType = {
 const TimerContext = createContext<TimerContextType | undefined>(undefined);
 
 export function TimerProvider({ children }: { children: ReactNode }) {
-    // Load initial state from localStorage
-    const [history, setHistory] = useState<Session[]>(() => {
-        const stored = localStorage.getItem("timerHistory");
-        if (stored) {
-            try {
-                const parsed = JSON.parse(stored);
-                return parsed
-                    .map((s: any) => ({
-                        ...s,
-                        startTime: new Date(s.startTime),
-                        endTime: new Date(s.endTime),
-                    }))
-                    .sort((a: Session, b: Session) => a.startTime.getTime() - b.startTime.getTime());
-            } catch {
-                return [];
-            }
-        }
-        return [];
-    });
+    const [history, setHistory] = useState<Session[]>([]);
+    const [loading, setLoading] = useState(true);
 
+    // Load history on mount
+    useEffect(() => {
+        const load = async () => {
+            try {
+                // No migration – just load from IndexedDB
+                const sessions = await getAllSessions();
+                setHistory(sessions);
+            } catch (err) {
+                console.error('Failed to load history:', err);
+                setHistory([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, []);
+
+    // Timer state (localStorage for fast sync)
     const [isRunning, setIsRunning] = useState(() => {
-        const stored = localStorage.getItem("timerIsRunning");
-        return stored === "true";
+        const stored = localStorage.getItem('timerIsRunning');
+        return stored === 'true';
     });
 
     const [startTime, setStartTime] = useState<Date | null>(() => {
-        const stored = localStorage.getItem("timerStartTime");
+        const stored = localStorage.getItem('timerStartTime');
         if (stored) {
             try {
                 return new Date(JSON.parse(stored));
@@ -66,7 +76,6 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         return null;
     });
 
-    // Use a ref to keep the latest time without triggering re‑renders
     const timeRef = useRef(0);
     const [time, setTime] = useState(() => {
         if (isRunning && startTime) {
@@ -78,28 +87,22 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     });
 
     const rafIdRef = useRef<number | null>(null);
-
-    // 🔒 Processing lock to prevent double‑click race conditions
     const isProcessingRef = useRef(false);
 
-    // Persist timer state to localStorage
+    // Persist running state
     useEffect(() => {
-        localStorage.setItem("timerIsRunning", String(isRunning));
+        localStorage.setItem('timerIsRunning', String(isRunning));
     }, [isRunning]);
 
     useEffect(() => {
         if (startTime) {
-            localStorage.setItem("timerStartTime", JSON.stringify(startTime.getTime()));
+            localStorage.setItem('timerStartTime', JSON.stringify(startTime.getTime()));
         } else {
-            localStorage.removeItem("timerStartTime");
+            localStorage.removeItem('timerStartTime');
         }
     }, [startTime]);
 
-    useEffect(() => {
-        localStorage.setItem("timerHistory", JSON.stringify(history));
-    }, [history]);
-
-    // Timer update loop – safe, as cleanup cancels any scheduled RAF
+    // Timer loop
     useEffect(() => {
         const updateTimer = () => {
             if (isRunning && startTime) {
@@ -131,7 +134,6 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     }, [isRunning, startTime]);
 
     const startTimer = () => {
-        // Prevent double‑click
         if (isProcessingRef.current) return;
         isProcessingRef.current = true;
 
@@ -145,7 +147,6 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     };
 
     const stopTimer = () => {
-        // Prevent double‑click
         if (isProcessingRef.current || !isRunning || !startTime) return;
         isProcessingRef.current = true;
 
@@ -158,20 +159,20 @@ export function TimerProvider({ children }: { children: ReactNode }) {
                 endTime,
                 duration,
             };
+            addSession(session).catch(console.error);
             setHistory((prev) => [...prev, session]);
         }
         setIsRunning(false);
         setStartTime(null);
         timeRef.current = 0;
         setTime(0);
-        localStorage.removeItem("timerIsRunning");
-        localStorage.removeItem("timerStartTime");
+        localStorage.removeItem('timerIsRunning');
+        localStorage.removeItem('timerStartTime');
 
         isProcessingRef.current = false;
     };
 
     const resetTimer = () => {
-        // Prevent double‑click
         if (isProcessingRef.current) return;
         isProcessingRef.current = true;
 
@@ -180,8 +181,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
             setStartTime(null);
             timeRef.current = 0;
             setTime(0);
-            localStorage.removeItem("timerIsRunning");
-            localStorage.removeItem("timerStartTime");
+            localStorage.removeItem('timerIsRunning');
+            localStorage.removeItem('timerStartTime');
         } else {
             timeRef.current = 0;
             setTime(0);
@@ -190,13 +191,30 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         isProcessingRef.current = false;
     };
 
+    // New methods for bulk operations
+    const replaceHistory = async (newHistory: Session[]) => {
+        await clearAllSessions();
+        if (newHistory.length > 0) {
+            await addSessions(newHistory);
+        }
+        setHistory(newHistory);
+    };
+
+    const clearHistory = async () => {
+        await clearAllSessions();
+        setHistory([]);
+    };
+
     return (
         <TimerContext.Provider
             value={{
                 time,
                 isRunning,
                 history,
+                loading,
                 setHistory,
+                replaceHistory,
+                clearHistory,
                 startTimer,
                 stopTimer,
                 resetTimer,
@@ -209,8 +227,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
 
 export function useTimer() {
     const context = useContext(TimerContext);
-    if (context === undefined) {
-        throw new Error("useTimer must be used within a TimerProvider");
+    if (!context) {
+        throw new Error('useTimer must be used within a TimerProvider');
     }
     return context;
 }
