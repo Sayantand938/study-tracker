@@ -1,7 +1,6 @@
-// src/pages/History.tsx
 import { useState, useMemo } from "react";
 import { HistoryTable } from "@/components/history/HistoryTable";
-import { useTimer } from "@/hooks/useTimer";
+import useTimerStore from "@/store/timerStore";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -16,7 +15,7 @@ const formatDate = (date: Date) => {
 };
 
 export function History() {
-    const { history } = useTimer();
+    const history = useTimerStore((state) => state.history);
     // Default to today
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 

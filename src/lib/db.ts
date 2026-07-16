@@ -1,6 +1,5 @@
-// src/lib/db.ts
 import { openDB, type IDBPDatabase } from 'idb';
-import type { Session } from '@/context/timer-context';
+import type { Session } from '@/types';
 
 const DB_NAME = 'StudyTrackerDB';
 const STORE_NAME = 'sessions';

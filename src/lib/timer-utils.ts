@@ -1,5 +1,4 @@
-// src/lib/timer-utils.ts
-import { type Session } from "@/context/timer-context";
+import type { Session } from '@/types';
 
 export const formatTime = (date: Date) => {
     return date.toLocaleTimeString([], {

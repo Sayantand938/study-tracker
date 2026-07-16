@@ -1,6 +1,5 @@
-// src/pages/Settings.tsx
 import { useTheme } from "@/components/theme-provider";
-import { useTimer } from "@/hooks/useTimer";
+import useTimerStore from "@/store/timerStore";
 import { Button } from "@/components/ui/button";
 import { ExportImportButtons } from "@/components/history/ExportImportButtons";
 import { Moon, Sun, Trash2 } from "lucide-react";
@@ -16,7 +15,10 @@ import {
 
 export function Settings() {
     const { theme, setTheme } = useTheme();
-    const { history, clearHistory } = useTimer();
+    const { history, clearHistory } = useTimerStore((state) => ({
+        history: state.history,
+        clearHistory: state.clearHistory,
+    }));
     const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
     const handleClearHistory = async () => {

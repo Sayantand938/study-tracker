@@ -1,11 +1,11 @@
 // src/components/history/HistoryTable.tsx
 import { formatTime, formatDuration } from "@/lib/timer-utils";
-import { useTimer } from "@/hooks/useTimer";
-import { type Session } from '@/context/timer-context';
+import useTimerStore from "@/store/timerStore";
+import type { Session } from "@/types";
 
 export function HistoryTable({ sessions }: { sessions?: Session[] }) {
-    const { history } = useTimer();
-    const data = sessions ?? history; // use prop if provided, else context
+    const history = useTimerStore((state) => state.history);
+    const data = sessions ?? history; // use prop if provided, else store
 
     if (data.length === 0) {
         return <p className="text-muted-foreground">No sessions recorded yet.</p>;

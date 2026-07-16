@@ -1,9 +1,15 @@
-import { useTimer } from "@/hooks/useTimer";
+import useTimerStore from "@/store/timerStore";
 import { Button } from "@/components/ui/button";
 import { Play, Square, RotateCcw } from "lucide-react";
 
 export function Timer() {
-  const { time, isRunning, startTimer, stopTimer, resetTimer } = useTimer();
+  const { time, isRunning, startTimer, stopTimer, resetTimer } = useTimerStore((state) => ({
+    time: state.time,
+    isRunning: state.isRunning,
+    startTimer: state.startTimer,
+    stopTimer: state.stopTimer,
+    resetTimer: state.resetTimer,
+  }));
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -25,19 +31,11 @@ export function Timer() {
         {formatTime(time)}
       </div>
       <div className="mt-8 flex gap-4">
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={handleStartStop}
-        >
+        <Button variant="outline" size="lg" onClick={handleStartStop}>
           {isRunning ? <Square className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
           {isRunning ? "Stop" : "Start"}
         </Button>
-        <Button
-          variant="outline"
-          size="lg"
-          onClick={resetTimer}
-        >
+        <Button variant="outline" size="lg" onClick={resetTimer}>
           <RotateCcw className="mr-2 h-5 w-5" />
           Reset
         </Button>

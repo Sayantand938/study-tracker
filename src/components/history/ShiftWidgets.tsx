@@ -1,13 +1,13 @@
 // src/components/history/ShiftWidgets.tsx
 import { formatDuration, calculateShiftTotals } from "@/lib/timer-utils";
-import { useTimer } from "@/hooks/useTimer";
-import { type Session } from '@/context/timer-context';
+import useTimerStore from "@/store/timerStore";
+import type { Session } from "@/types";
 
 const shiftLabels = ["Shift 1", "Shift 2", "Shift 3", "Shift 4"];
 const shiftRanges = ["00:00–12:00", "12:00–16:00", "16:00–20:00", "20:00–24:00"];
 
 export function ShiftWidgets({ sessions }: { sessions?: Session[] }) {
-    const { history } = useTimer();
+    const history = useTimerStore((state) => state.history);
     const data = sessions ?? history;
     const totals = calculateShiftTotals(data);
 

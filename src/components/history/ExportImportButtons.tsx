@@ -1,8 +1,7 @@
-// src/components/history/ExportImportButtons.tsx
 import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
-import { useTimer } from "@/hooks/useTimer";
-import { type Session } from '@/context/timer-context';
+import useTimerStore from "@/store/timerStore";
+import type { Session } from "@/types";
 import { useRef, useState } from "react";
 import {
     Dialog,
@@ -32,7 +31,10 @@ function isValidSession(item: unknown): item is ImportedSession {
 }
 
 export function ExportImportButtons() {
-    const { history, replaceHistory } = useTimer();
+    const { history, replaceHistory } = useTimerStore((state) => ({
+        history: state.history,
+        replaceHistory: state.replaceHistory,
+    }));
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [dialogOpen, setDialogOpen] = useState(false);

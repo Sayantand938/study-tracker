@@ -1,6 +1,5 @@
-// src/pages/Dashboard.tsx
 import { ShiftWidgets } from "@/components/history/ShiftWidgets";
-import { useTimer } from "@/hooks/useTimer";
+import useTimerStore from "@/store/timerStore";
 import { formatDuration } from "@/lib/timer-utils";
 
 // Helper: check if two dates fall on the same calendar day
@@ -45,7 +44,7 @@ const formatDateShort = (date: Date) => {
 };
 
 export function Dashboard() {
-    const { history } = useTimer();
+    const history = useTimerStore((state) => state.history);
 
     const today = new Date();
 

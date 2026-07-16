@@ -1,7 +1,5 @@
-// src/App.tsx
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { TimerProvider } from "@/context/TimerContext";
-import { useTimer } from "@/hooks/useTimer";
+import useTimerStore from "@/store/timerStore";
 import { Timer } from "@/components/Timer";
 import { History } from "@/pages/History";
 import { Dashboard } from "@/pages/Dashboard";
@@ -9,7 +7,7 @@ import { Settings } from "@/pages/Settings";
 import { Layout } from "@/components/layout/Layout";
 
 function AppContent() {
-  const { loading } = useTimer();
+  const loading = useTimerStore((state) => state.loading);
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -35,9 +33,7 @@ function AppContent() {
 export function App() {
   return (
     <BrowserRouter>
-      <TimerProvider>
-        <AppContent />
-      </TimerProvider>
+      <AppContent />
     </BrowserRouter>
   );
 }
