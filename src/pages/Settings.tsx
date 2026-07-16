@@ -1,3 +1,4 @@
+// src/pages/Settings.tsx
 import { useTheme } from "@/components/theme-provider";
 import { useTimer } from "@/context/TimerContext";
 import { Button } from "@/components/ui/button";
@@ -15,11 +16,11 @@ import {
 
 export function Settings() {
     const { theme, setTheme } = useTheme();
-    const { history, setHistory } = useTimer();
+    const { history, clearHistory } = useTimer();
     const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
-    const handleClearHistory = () => {
-        setHistory([]);
+    const handleClearHistory = async () => {
+        await clearHistory();
         setClearDialogOpen(false);
     };
 
@@ -31,7 +32,6 @@ export function Settings() {
         <div className="space-y-6">
             <h2 className="text-2xl font-medium">Settings</h2>
 
-            {/* Theme toggle */}
             <div className="flex items-center justify-between rounded-lg border border-border p-4">
                 <div>
                     <p className="font-medium">Theme</p>
@@ -54,7 +54,6 @@ export function Settings() {
                 </Button>
             </div>
 
-            {/* Export / Import */}
             <div className="flex items-center justify-between rounded-lg border border-border p-4">
                 <div>
                     <p className="font-medium">Data</p>
@@ -65,7 +64,6 @@ export function Settings() {
                 <ExportImportButtons />
             </div>
 
-            {/* Clear history */}
             <div className="flex items-center justify-between rounded-lg border border-border p-4">
                 <div>
                     <p className="font-medium">Clear History</p>
@@ -84,7 +82,6 @@ export function Settings() {
                 </Button>
             </div>
 
-            {/* Clear confirmation dialog */}
             <Dialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
                 <DialogContent>
                     <DialogHeader>

@@ -1,3 +1,4 @@
+// src/components/history/ExportImportButtons.tsx
 import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
 import { useTimer } from "@/context/TimerContext";
@@ -12,10 +13,9 @@ import {
 } from "@/components/ui/dialog";
 
 export function ExportImportButtons() {
-    const { history, setHistory } = useTimer();
+    const { history, replaceHistory } = useTimer();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // Dialog state
     const [dialogOpen, setDialogOpen] = useState(false);
     const [dialogType, setDialogType] = useState<"confirm" | "alert">("confirm");
     const [dialogTitle, setDialogTitle] = useState("");
@@ -73,12 +73,12 @@ export function ExportImportButtons() {
         fileInputRef.current?.click();
     };
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const content = e.target?.result;
                 if (typeof content !== "string") throw new Error("Invalid file content");
@@ -104,8 +104,8 @@ export function ExportImportButtons() {
 
                 showConfirm(
                     `This will replace all current history (${history.length} sessions) with ${sessions.length} imported sessions. Continue?`,
-                    () => {
-                        setHistory(sessions);
+                    async () => {
+                        await replaceHistory(sessions);
                         showAlert(`Successfully imported ${sessions.length} sessions.`);
                     }
                 );
