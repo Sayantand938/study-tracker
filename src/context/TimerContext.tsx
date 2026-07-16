@@ -10,7 +10,7 @@ import {
 } from "react";
 
 export type Session = {
-    id: number;
+    id: string; // now a UUID instead of number
     startTime: Date;
     endTime: Date;
     duration: number; // in seconds
@@ -125,7 +125,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
                 rafIdRef.current = null;
             }
         };
-    }, [isRunning, startTime]); // <-- no `time` dependency
+    }, [isRunning, startTime]);
 
     const startTimer = () => {
         const now = new Date();
@@ -141,7 +141,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
             const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
             if (duration > 0) {
                 const session: Session = {
-                    id: Date.now(),
+                    id: crypto.randomUUID(), // ✅ UUID instead of Date.now()
                     startTime,
                     endTime,
                     duration,
