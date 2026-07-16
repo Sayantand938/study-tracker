@@ -30,6 +30,7 @@ interface TimerStore {
     startTime: Date | null;
     history: Session[];
     loading: boolean;
+    historyVersion: number; // <-- new: guard against stale updates
 
     // Actions
     loadHistory: () => Promise<void>;
@@ -49,8 +50,8 @@ const useTimerStore = create<TimerStore>()(
             startTime: storedStartTime,
             history: [],
             loading: true,
+            historyVersion: 0, // initial version
 
-            // Load history from IndexedDB
             loadHistory: async () => {
                 try {
                     const sessions = await getAllSessions();
@@ -61,7 +62,6 @@ const useTimerStore = create<TimerStore>()(
                 }
             },
 
-            // Start the timer
             startTimer: () => {
                 if (isProcessing) return;
                 isProcessing = true;
@@ -75,7 +75,6 @@ const useTimerStore = create<TimerStore>()(
                 localStorage.setItem(RUNNING_KEY, 'true');
                 localStorage.setItem(START_TIME_KEY, JSON.stringify(now.getTime()));
 
-                // Start the animation loop if not already running
                 if (!rafId) {
                     const update = () => {
                         const { isRunning, startTime } = get();
@@ -93,12 +92,11 @@ const useTimerStore = create<TimerStore>()(
                 isProcessing = false;
             },
 
-            // Stop the timer
             stopTimer: () => {
                 if (isProcessing) return;
                 isProcessing = true;
 
-                const { isRunning, startTime } = get();
+                const { isRunning, startTime, historyVersion } = get();
                 if (!isRunning || !startTime) {
                     isProcessing = false;
                     return;
@@ -107,7 +105,7 @@ const useTimerStore = create<TimerStore>()(
                 const endTime = new Date();
                 const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
 
-                // Cancel the animation loop
+                // Cancel animation loop
                 if (rafId) {
                     cancelAnimationFrame(rafId);
                     rafId = null;
@@ -129,27 +127,36 @@ const useTimerStore = create<TimerStore>()(
                         endTime,
                         duration,
                     };
+                    const versionAtStop = historyVersion; // capture current version
                     addSession(session)
                         .then(() => {
-                            // Update history
-                            set((state) => ({
-                                history: [...state.history, session],
-                            }));
+                            // Only apply if history hasn't been replaced/cleared since stop
+                            set((state) => {
+                                if (state.historyVersion !== versionAtStop) {
+                                    // Stale update – discard
+                                    return {};
+                                }
+                                return {
+                                    history: [...state.history, session],
+                                    historyVersion: state.historyVersion + 1,
+                                };
+                            });
                         })
                         .catch(console.error);
+                } else {
+                    // No session to save, but we still increment version to mark a change
+                    set((state) => ({ historyVersion: state.historyVersion + 1 }));
                 }
 
                 isProcessing = false;
             },
 
-            // Reset timer (stop if running, reset time to 0)
             resetTimer: () => {
                 if (isProcessing) return;
                 isProcessing = true;
 
                 const { isRunning } = get();
                 if (isRunning) {
-                    // Stop the loop
                     if (rafId) {
                         cancelAnimationFrame(rafId);
                         rafId = null;
@@ -168,19 +175,23 @@ const useTimerStore = create<TimerStore>()(
                 isProcessing = false;
             },
 
-            // Replace entire history
             replaceHistory: async (newHistory: Session[]) => {
                 await clearAllSessions();
                 if (newHistory.length > 0) {
                     await addSessions(newHistory);
                 }
-                set({ history: newHistory });
+                set((state) => ({
+                    history: newHistory,
+                    historyVersion: state.historyVersion + 1,
+                }));
             },
 
-            // Clear all history
             clearHistory: async () => {
                 await clearAllSessions();
-                set({ history: [] });
+                set((state) => ({
+                    history: [],
+                    historyVersion: state.historyVersion + 1,
+                }));
             },
         }),
         { name: 'timer-store' }

@@ -5,30 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, X } from "lucide-react";
-
-const formatDate = (date: Date) => {
-    return date.toLocaleDateString(undefined, {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-    });
-};
+import { format, isSameDay } from "date-fns";
 
 export function History() {
     const history = useTimerStore((state) => state.history);
-    // Default to today
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
-    // Filter sessions by selected date (always filtered)
     const filteredHistory = useMemo(() => {
-        return history.filter((session) => {
-            const d = new Date(session.startTime);
-            return (
-                d.getFullYear() === selectedDate.getFullYear() &&
-                d.getMonth() === selectedDate.getMonth() &&
-                d.getDate() === selectedDate.getDate()
-            );
-        });
+        return history.filter((session) =>
+            isSameDay(session.startTime, selectedDate)
+        );
     }, [history, selectedDate]);
 
     const goToToday = () => setSelectedDate(new Date());
@@ -45,7 +31,7 @@ export function History() {
                                 className="w-[180px] justify-start text-left font-normal"
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {formatDate(selectedDate)}
+                                {format(selectedDate, "MMM d, yyyy")}
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="end">
@@ -61,9 +47,9 @@ export function History() {
                     </Button>
                 </div>
             </div>
-            {/* Show a small summary */}
             <p className="text-sm text-muted-foreground">
-                Showing {filteredHistory.length} session{filteredHistory.length !== 1 ? "s" : ""} for {formatDate(selectedDate)}
+                Showing {filteredHistory.length} session{filteredHistory.length !== 1 ? "s" : ""} for{" "}
+                {format(selectedDate, "MMM d, yyyy")}
             </p>
             <HistoryTable sessions={filteredHistory} />
         </div>
