@@ -1,7 +1,7 @@
 // src/components/history/ExportImportButtons.tsx
 import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
-import { useTimer } from "@/context/TimerContext";
+import { useTimer, type Session } from "@/context/TimerContext";
 import { useRef, useState } from "react";
 import {
     Dialog,
@@ -11,6 +11,24 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+
+// Type for a session as stored in JSON (dates as strings)
+type ImportedSession = Omit<Session, 'startTime' | 'endTime'> & {
+    startTime: string;
+    endTime: string;
+};
+
+// Type guard to check if an item is a valid ImportedSession
+function isValidSession(item: unknown): item is ImportedSession {
+    if (!item || typeof item !== 'object') return false;
+    const s = item as Record<string, unknown>;
+    if (!s.id || !s.startTime || !s.endTime || typeof s.duration !== 'number') return false;
+    const start = new Date(s.startTime as string);
+    const end = new Date(s.endTime as string);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
+    if (end.getTime() < start.getTime()) return false;
+    return true;
+}
 
 export function ExportImportButtons() {
     const { history, replaceHistory } = useTimer();
@@ -85,22 +103,16 @@ export function ExportImportButtons() {
                 const imported = JSON.parse(content);
                 if (!Array.isArray(imported)) throw new Error("Data must be an array");
 
-                const valid = imported.every((item: any) => {
-                    if (!item.id || !item.startTime || !item.endTime || typeof item.duration !== "number")
-                        return false;
-                    const start = new Date(item.startTime);
-                    const end = new Date(item.endTime);
-                    if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
-                    if (end.getTime() < start.getTime()) return false;
-                    return true;
-                });
+                // Validate each item using the type guard
+                const valid = imported.every((item) => isValidSession(item));
                 if (!valid) throw new Error("Invalid session data structure");
 
-                const sessions = imported.map((s: any) => ({
+                // Now we know all items are ImportedSession, so we can cast and map
+                const sessions = (imported as ImportedSession[]).map((s) => ({
                     ...s,
                     startTime: new Date(s.startTime),
                     endTime: new Date(s.endTime),
-                }));
+                })) as Session[];
 
                 showConfirm(
                     `This will replace all current history (${history.length} sessions) with ${sessions.length} imported sessions. Continue?`,

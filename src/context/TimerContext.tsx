@@ -77,14 +77,18 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     });
 
     const timeRef = useRef(0);
+    // Initialize time without touching ref
     const [time, setTime] = useState(() => {
         if (isRunning && startTime) {
-            const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
-            timeRef.current = elapsed;
-            return elapsed;
+            return Math.floor((Date.now() - startTime.getTime()) / 1000);
         }
         return 0;
     });
+
+    // Sync ref with time after render
+    useEffect(() => {
+        timeRef.current = time;
+    }, [time]);
 
     const rafIdRef = useRef<number | null>(null);
     const isProcessingRef = useRef(false);
@@ -225,6 +229,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTimer() {
     const context = useContext(TimerContext);
     if (!context) {
