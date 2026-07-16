@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow';
 import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
 import useTimerStore from "@/store/timerStore";
@@ -31,10 +32,12 @@ function isValidSession(item: unknown): item is ImportedSession {
 }
 
 export function ExportImportButtons() {
-    const { history, replaceHistory } = useTimerStore((state) => ({
-        history: state.history,
-        replaceHistory: state.replaceHistory,
-    }));
+    const { history, replaceHistory } = useTimerStore(
+        useShallow((state) => ({
+            history: state.history,
+            replaceHistory: state.replaceHistory,
+        }))
+    );
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [dialogOpen, setDialogOpen] = useState(false);

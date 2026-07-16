@@ -1,15 +1,18 @@
+import { useShallow } from 'zustand/react/shallow';
 import useTimerStore from "@/store/timerStore";
 import { Button } from "@/components/ui/button";
 import { Play, Square, RotateCcw } from "lucide-react";
 
 export function Timer() {
-  const { time, isRunning, startTimer, stopTimer, resetTimer } = useTimerStore((state) => ({
-    time: state.time,
-    isRunning: state.isRunning,
-    startTimer: state.startTimer,
-    stopTimer: state.stopTimer,
-    resetTimer: state.resetTimer,
-  }));
+  const { time, isRunning, startTimer, stopTimer, resetTimer } = useTimerStore(
+    useShallow((state) => ({
+      time: state.time,
+      isRunning: state.isRunning,
+      startTimer: state.startTimer,
+      stopTimer: state.stopTimer,
+      resetTimer: state.resetTimer,
+    }))
+  );
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

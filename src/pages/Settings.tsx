@@ -1,3 +1,4 @@
+import { useShallow } from 'zustand/react/shallow';
 import { useTheme } from "@/components/theme-provider";
 import useTimerStore from "@/store/timerStore";
 import { Button } from "@/components/ui/button";
@@ -15,10 +16,12 @@ import {
 
 export function Settings() {
     const { theme, setTheme } = useTheme();
-    const { history, clearHistory } = useTimerStore((state) => ({
-        history: state.history,
-        clearHistory: state.clearHistory,
-    }));
+    const { history, clearHistory } = useTimerStore(
+        useShallow((state) => ({
+            history: state.history,
+            clearHistory: state.clearHistory,
+        }))
+    );
     const [clearDialogOpen, setClearDialogOpen] = useState(false);
 
     const handleClearHistory = async () => {
