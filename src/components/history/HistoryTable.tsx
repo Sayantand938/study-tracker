@@ -5,7 +5,7 @@ export function HistoryTable() {
     const { history } = useTimer();
 
     if (history.length === 0) {
-        return <p className="text-white/60">No sessions recorded yet.</p>;
+        return <p className="text-muted-foreground">No sessions recorded yet.</p>;
     }
 
     const totalDuration = history.reduce((acc, session) => acc + session.duration, 0);
@@ -14,7 +14,7 @@ export function HistoryTable() {
         <div className="overflow-x-auto">
             <table className="w-full border-collapse">
                 <thead>
-                    <tr className="border-b border-white/20 text-left text-sm text-white/60">
+                    <tr className="border-b border-border text-left text-sm text-muted-foreground">
                         <th className="py-2 px-4 font-medium">#</th>
                         <th className="py-2 px-4 font-medium">Start</th>
                         <th className="py-2 px-4 font-medium">End</th>
@@ -25,9 +25,9 @@ export function HistoryTable() {
                     {history.map((session, index) => (
                         <tr
                             key={session.id}
-                            className="border-b border-white/10 hover:bg-white/5 transition-colors"
+                            className="border-b border-border/50 hover:bg-muted/50 transition-colors"
                         >
-                            <td className="py-3 px-4 text-white/70">{index + 1}</td>
+                            <td className="py-3 px-4 text-muted-foreground">{index + 1}</td>
                             <td className="py-3 px-4">{formatTime(session.startTime)}</td>
                             <td className="py-3 px-4">{formatTime(session.endTime)}</td>
                             <td className="py-3 px-4 text-right font-mono">
@@ -37,11 +37,11 @@ export function HistoryTable() {
                     ))}
                 </tbody>
                 <tfoot>
-                    <tr className="border-t border-white/30 font-medium">
-                        <td className="py-3 px-4 text-white/80">T</td>
-                        <td className="py-3 px-4 text-white/50">–</td>
-                        <td className="py-3 px-4 text-white/50">–</td>
-                        <td className="py-3 px-4 text-right font-mono text-white">
+                    <tr className="border-t border-border font-medium">
+                        <td className="py-3 px-4 text-muted-foreground">T</td>
+                        <td className="py-3 px-4 text-muted-foreground/50">–</td>
+                        <td className="py-3 px-4 text-muted-foreground/50">–</td>
+                        <td className="py-3 px-4 text-right font-mono text-foreground">
                             {formatDuration(totalDuration)}
                         </td>
                     </tr>

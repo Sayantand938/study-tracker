@@ -49,7 +49,6 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         return [];
     });
 
-    // Load timer state from localStorage
     const [isRunning, setIsRunning] = useState(() => {
         const stored = localStorage.getItem("timerIsRunning");
         return stored === "true";
@@ -67,10 +66,12 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         return null;
     });
 
-    // Calculate initial time if timer was running
+    // Use a ref to keep the latest time without triggering re‑renders
+    const timeRef = useRef(0);
     const [time, setTime] = useState(() => {
         if (isRunning && startTime) {
             const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
+            timeRef.current = elapsed;
             return elapsed;
         }
         return 0;
@@ -91,18 +92,18 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         }
     }, [startTime]);
 
-    // Persist history to localStorage
     useEffect(() => {
         localStorage.setItem("timerHistory", JSON.stringify(history));
     }, [history]);
 
-    // Timer update loop using requestAnimationFrame
+    // Timer update loop – now dependencies are only isRunning and startTime
     useEffect(() => {
         const updateTimer = () => {
             if (isRunning && startTime) {
                 const now = Date.now();
                 const elapsed = Math.floor((now - startTime.getTime()) / 1000);
-                if (elapsed !== time) {
+                if (elapsed !== timeRef.current) {
+                    timeRef.current = elapsed;
                     setTime(elapsed);
                 }
                 rafIdRef.current = requestAnimationFrame(updateTimer);
@@ -124,12 +125,13 @@ export function TimerProvider({ children }: { children: ReactNode }) {
                 rafIdRef.current = null;
             }
         };
-    }, [isRunning, startTime, time]);
+    }, [isRunning, startTime]); // <-- no `time` dependency
 
     const startTimer = () => {
         const now = new Date();
         setStartTime(now);
         setIsRunning(true);
+        timeRef.current = 0;
         setTime(0);
     };
 
@@ -148,6 +150,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
             }
             setIsRunning(false);
             setStartTime(null);
+            timeRef.current = 0;
             setTime(0);
             localStorage.removeItem("timerIsRunning");
             localStorage.removeItem("timerStartTime");
@@ -158,10 +161,12 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         if (isRunning) {
             setIsRunning(false);
             setStartTime(null);
+            timeRef.current = 0;
             setTime(0);
             localStorage.removeItem("timerIsRunning");
             localStorage.removeItem("timerStartTime");
         } else {
+            timeRef.current = 0;
             setTime(0);
         }
     };

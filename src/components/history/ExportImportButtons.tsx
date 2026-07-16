@@ -39,9 +39,7 @@ export function ExportImportButtons() {
     };
 
     const handleDialogConfirm = () => {
-        // Close confirm dialog first
         setDialogOpen(false);
-        // Execute the confirm action after a short delay to allow dialog to close
         if (onConfirm) {
             setTimeout(() => {
                 onConfirm();
@@ -87,13 +85,15 @@ export function ExportImportButtons() {
                 const imported = JSON.parse(content);
                 if (!Array.isArray(imported)) throw new Error("Data must be an array");
 
-                const valid = imported.every(
-                    (item) =>
-                        item.id &&
-                        item.startTime &&
-                        item.endTime &&
-                        typeof item.duration === "number"
-                );
+                const valid = imported.every((item: any) => {
+                    if (!item.id || !item.startTime || !item.endTime || typeof item.duration !== "number")
+                        return false;
+                    const start = new Date(item.startTime);
+                    const end = new Date(item.endTime);
+                    if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
+                    if (end.getTime() < start.getTime()) return false;
+                    return true;
+                });
                 if (!valid) throw new Error("Invalid session data structure");
 
                 const sessions = imported.map((s: any) => ({
@@ -119,23 +119,23 @@ export function ExportImportButtons() {
 
     return (
         <>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 sm:gap-1">
                 <Button
                     variant="outline"
                     size="sm"
-                    className="border-white/20 text-white hover:bg-white/10"
+                    className="flex-1 sm:flex-none min-w-[80px]"
                     onClick={handleExport}
                 >
-                    <Download className="mr-2 h-4 w-4" />
+                    <Download className="mr-1 h-4 w-4" />
                     Export
                 </Button>
                 <Button
                     variant="outline"
                     size="sm"
-                    className="border-white/20 text-white hover:bg-white/10"
+                    className="flex-1 sm:flex-none min-w-[80px]"
                     onClick={handleImportClick}
                 >
-                    <Upload className="mr-2 h-4 w-4" />
+                    <Upload className="mr-1 h-4 w-4" />
                     Import
                 </Button>
                 <input
@@ -148,37 +148,25 @@ export function ExportImportButtons() {
             </div>
 
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="bg-black text-white border border-white/20 sm:max-w-md">
+                <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle className="text-white">{dialogTitle}</DialogTitle>
-                        <DialogDescription className="text-white/70">
+                        <DialogTitle>{dialogTitle}</DialogTitle>
+                        <DialogDescription>
                             {dialogMessage}
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2">
                         {dialogType === "confirm" ? (
                             <>
-                                <Button
-                                    variant="outline"
-                                    onClick={handleDialogCancel}
-                                    className="border-white/20 text-white hover:bg-white/10"
-                                >
+                                <Button variant="outline" onClick={handleDialogCancel}>
                                     Cancel
                                 </Button>
-                                <Button
-                                    variant="default"
-                                    onClick={handleDialogConfirm}
-                                    className="bg-white text-black hover:bg-white/90"
-                                >
+                                <Button variant="default" onClick={handleDialogConfirm}>
                                     Confirm
                                 </Button>
                             </>
                         ) : (
-                            <Button
-                                variant="default"
-                                onClick={handleDialogCancel}
-                                className="bg-white text-black hover:bg-white/90"
-                            >
+                            <Button variant="default" onClick={handleDialogCancel}>
                                 OK
                             </Button>
                         )}

@@ -13,10 +13,10 @@ export function ShiftWidgets() {
             {totals.map((total, index) => (
                 <div
                     key={index}
-                    className="bg-white/5 border border-white/10 rounded-lg p-4 text-center"
+                    className="bg-muted/30 border border-border rounded-lg p-4 text-center"
                 >
-                    <div className="text-sm text-white/60">{shiftLabels[index]}</div>
-                    <div className="text-xs text-white/40">{shiftRanges[index]}</div>
+                    <div className="text-sm text-muted-foreground">{shiftLabels[index]}</div>
+                    <div className="text-xs text-muted-foreground/60">{shiftRanges[index]}</div>
                     <div className="text-2xl font-mono mt-2">
                         {formatDuration(total)}
                     </div>
