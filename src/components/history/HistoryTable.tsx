@@ -1,14 +1,16 @@
+// src/components/history/HistoryTable.tsx
 import { formatTime, formatDuration } from "@/lib/timer-utils";
-import { useTimer } from "@/context/TimerContext";
+import { useTimer, type Session } from "@/context/TimerContext";
 
-export function HistoryTable() {
+export function HistoryTable({ sessions }: { sessions?: Session[] }) {
     const { history } = useTimer();
+    const data = sessions ?? history; // use prop if provided, else context
 
-    if (history.length === 0) {
+    if (data.length === 0) {
         return <p className="text-muted-foreground">No sessions recorded yet.</p>;
     }
 
-    const totalDuration = history.reduce((acc, session) => acc + session.duration, 0);
+    const totalDuration = data.reduce((acc, session) => acc + session.duration, 0);
 
     return (
         <div className="overflow-x-auto">
@@ -22,7 +24,7 @@ export function HistoryTable() {
                     </tr>
                 </thead>
                 <tbody>
-                    {history.map((session, index) => (
+                    {data.map((session, index) => (
                         <tr
                             key={session.id}
                             className="border-b border-border/50 hover:bg-muted/50 transition-colors"
