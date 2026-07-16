@@ -10,7 +10,7 @@ import {
 } from "react";
 
 export type Session = {
-    id: string; // now a UUID instead of number
+    id: string;
     startTime: Date;
     endTime: Date;
     duration: number; // in seconds
@@ -79,6 +79,9 @@ export function TimerProvider({ children }: { children: ReactNode }) {
 
     const rafIdRef = useRef<number | null>(null);
 
+    // 🔒 Processing lock to prevent double‑click race conditions
+    const isProcessingRef = useRef(false);
+
     // Persist timer state to localStorage
     useEffect(() => {
         localStorage.setItem("timerIsRunning", String(isRunning));
@@ -96,7 +99,7 @@ export function TimerProvider({ children }: { children: ReactNode }) {
         localStorage.setItem("timerHistory", JSON.stringify(history));
     }, [history]);
 
-    // Timer update loop – now dependencies are only isRunning and startTime
+    // Timer update loop – safe, as cleanup cancels any scheduled RAF
     useEffect(() => {
         const updateTimer = () => {
             if (isRunning && startTime) {
@@ -128,36 +131,50 @@ export function TimerProvider({ children }: { children: ReactNode }) {
     }, [isRunning, startTime]);
 
     const startTimer = () => {
+        // Prevent double‑click
+        if (isProcessingRef.current) return;
+        isProcessingRef.current = true;
+
         const now = new Date();
         setStartTime(now);
         setIsRunning(true);
         timeRef.current = 0;
         setTime(0);
+
+        isProcessingRef.current = false;
     };
 
     const stopTimer = () => {
-        if (isRunning && startTime) {
-            const endTime = new Date();
-            const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
-            if (duration > 0) {
-                const session: Session = {
-                    id: crypto.randomUUID(), // ✅ UUID instead of Date.now()
-                    startTime,
-                    endTime,
-                    duration,
-                };
-                setHistory((prev) => [...prev, session]);
-            }
-            setIsRunning(false);
-            setStartTime(null);
-            timeRef.current = 0;
-            setTime(0);
-            localStorage.removeItem("timerIsRunning");
-            localStorage.removeItem("timerStartTime");
+        // Prevent double‑click
+        if (isProcessingRef.current || !isRunning || !startTime) return;
+        isProcessingRef.current = true;
+
+        const endTime = new Date();
+        const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+        if (duration > 0) {
+            const session: Session = {
+                id: crypto.randomUUID(),
+                startTime,
+                endTime,
+                duration,
+            };
+            setHistory((prev) => [...prev, session]);
         }
+        setIsRunning(false);
+        setStartTime(null);
+        timeRef.current = 0;
+        setTime(0);
+        localStorage.removeItem("timerIsRunning");
+        localStorage.removeItem("timerStartTime");
+
+        isProcessingRef.current = false;
     };
 
     const resetTimer = () => {
+        // Prevent double‑click
+        if (isProcessingRef.current) return;
+        isProcessingRef.current = true;
+
         if (isRunning) {
             setIsRunning(false);
             setStartTime(null);
@@ -169,6 +186,8 @@ export function TimerProvider({ children }: { children: ReactNode }) {
             timeRef.current = 0;
             setTime(0);
         }
+
+        isProcessingRef.current = false;
     };
 
     return (
