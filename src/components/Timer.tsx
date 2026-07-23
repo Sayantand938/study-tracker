@@ -30,7 +30,8 @@ export function Timer() {
 
   return (
     <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center">
-      <div className="text-8xl font-sans font-light tracking-wider select-none">
+      {/* Timer display – now using .font-martian */}
+      <div className="text-8xl font-martian font-light tracking-wider select-none">
         {formatTime(time)}
       </div>
       <div className="mt-8 flex gap-4">
