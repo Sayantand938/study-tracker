@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Toaster } from "sonner"; // <-- import Toaster
 import useTimerStore from "@/store/timerStore";
 import { Timer } from "@/components/Timer";
 import { History } from "@/pages/History";
@@ -19,14 +20,25 @@ function AppContent() {
     );
   }
   return (
-    <Routes>
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Timer />} />
-        <Route path="history" element={<History />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="settings" element={<Settings />} />
-      </Route>
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Timer />} />
+          <Route path="history" element={<History />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="settings" element={<Settings />} />
+        </Route>
+      </Routes>
+      <Toaster
+        position="bottom-right"
+        richColors
+        closeButton
+        toastOptions={{
+          duration: 4000,
+          className: "font-sans",
+        }}
+      />
+    </>
   );
 }
 

@@ -1,6 +1,7 @@
 import { useShallow } from 'zustand/react/shallow';
 import { Button } from "@/components/ui/button";
 import { Download, Upload } from "lucide-react";
+import { toast } from "sonner"; // <-- import toast
 import useTimerStore from "@/store/timerStore";
 import type { Session } from "@/types";
 import { useRef, useState } from "react";
@@ -33,10 +34,8 @@ function isValidSession(item: unknown): item is ImportedSession {
     if (s.endTime !== null) {
         const end = new Date(s.endTime as string);
         if (isNaN(end.getTime())) return false;
-        // Ensure endTime >= startTime if provided
         if (end.getTime() < start.getTime()) return false;
     } else {
-        // If endTime is null, duration should be 0 (active session)
         if (s.duration !== 0) return false;
     }
     return true;
@@ -52,24 +51,12 @@ export function ExportImportButtons() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [dialogOpen, setDialogOpen] = useState(false);
-    const [dialogType, setDialogType] = useState<"confirm" | "alert">("confirm");
-    const [dialogTitle, setDialogTitle] = useState("");
     const [dialogMessage, setDialogMessage] = useState("");
     const [onConfirm, setOnConfirm] = useState<(() => void) | null>(null);
 
     const showConfirm = (message: string, onConfirmAction: () => void) => {
-        setDialogType("confirm");
-        setDialogTitle("Confirm");
         setDialogMessage(message);
         setOnConfirm(() => onConfirmAction);
-        setDialogOpen(true);
-    };
-
-    const showAlert = (message: string) => {
-        setDialogType("alert");
-        setDialogTitle("Notice");
-        setDialogMessage(message);
-        setOnConfirm(null);
         setDialogOpen(true);
     };
 
@@ -87,21 +74,29 @@ export function ExportImportButtons() {
     };
 
     const handleExport = () => {
-        const data = JSON.stringify(history, null, 2);
-        const blob = new Blob([data], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
+        try {
+            const data = JSON.stringify(history, null, 2);
+            const blob = new Blob([data], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
 
-        const now = new Date();
-        const datePart = now.toISOString().slice(0, 10);
-        const timePart = now.toTimeString().slice(0, 8).replace(/:/g, "-");
-        link.download = `study-history-${datePart}-${timePart}.json`;
+            const now = new Date();
+            const datePart = now.toISOString().slice(0, 10);
+            const timePart = now.toTimeString().slice(0, 8).replace(/:/g, "-");
+            link.download = `study-history-${datePart}-${timePart}.json`;
 
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            toast.success(`Exported ${history.length} sessions successfully`);
+        } catch (error) {
+            toast.error('Export failed', {
+                description: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
     };
 
     const handleImportClick = () => {
@@ -120,11 +115,9 @@ export function ExportImportButtons() {
                 const imported = JSON.parse(content);
                 if (!Array.isArray(imported)) throw new Error("Data must be an array");
 
-                // Validate each item using the updated type guard
                 const valid = imported.every((item) => isValidSession(item));
                 if (!valid) throw new Error("Invalid session data structure");
 
-                // Map to Session objects, converting date strings and handling null endTime
                 const sessions = (imported as ImportedSession[]).map((s) => ({
                     ...s,
                     startTime: new Date(s.startTime),
@@ -134,12 +127,20 @@ export function ExportImportButtons() {
                 showConfirm(
                     `This will replace all current history (${history.length} sessions) with ${sessions.length} imported sessions. Continue?`,
                     async () => {
-                        await replaceHistory(sessions);
-                        showAlert(`Successfully imported ${sessions.length} sessions.`);
+                        try {
+                            await replaceHistory(sessions);
+                            toast.success(`Successfully imported ${sessions.length} sessions`);
+                        } catch (err) {
+                            toast.error('Import failed', {
+                                description: err instanceof Error ? err.message : 'Unknown error',
+                            });
+                        }
                     }
                 );
             } catch (error) {
-                showAlert(`Import failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+                toast.error('Import failed', {
+                    description: error instanceof Error ? error.message : 'Unknown error',
+                });
             }
         };
         reader.readAsText(file);
@@ -176,29 +177,20 @@ export function ExportImportButtons() {
                 />
             </div>
 
+            {/* Keep the confirm dialog for important actions */}
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>{dialogTitle}</DialogTitle>
-                        <DialogDescription>
-                            {dialogMessage}
-                        </DialogDescription>
+                        <DialogTitle>Confirm Import</DialogTitle>
+                        <DialogDescription>{dialogMessage}</DialogDescription>
                     </DialogHeader>
                     <DialogFooter className="gap-2">
-                        {dialogType === "confirm" ? (
-                            <>
-                                <Button variant="outline" onClick={handleDialogCancel}>
-                                    Cancel
-                                </Button>
-                                <Button variant="default" onClick={handleDialogConfirm}>
-                                    Confirm
-                                </Button>
-                            </>
-                        ) : (
-                            <Button variant="default" onClick={handleDialogCancel}>
-                                OK
-                            </Button>
-                        )}
+                        <Button variant="outline" onClick={handleDialogCancel}>
+                            Cancel
+                        </Button>
+                        <Button variant="default" onClick={handleDialogConfirm}>
+                            Confirm
+                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
