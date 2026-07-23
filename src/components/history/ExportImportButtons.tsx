@@ -13,21 +13,32 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-// Type for a session as stored in JSON (dates as strings)
+// Type for a session as stored in JSON (dates as strings, endTime can be null)
 type ImportedSession = Omit<Session, 'startTime' | 'endTime'> & {
     startTime: string;
-    endTime: string;
+    endTime: string | null;
 };
 
-// Type guard to check if an item is a valid ImportedSession
+// Type guard that accepts endTime: null or a valid date string
 function isValidSession(item: unknown): item is ImportedSession {
     if (!item || typeof item !== 'object') return false;
     const s = item as Record<string, unknown>;
-    if (!s.id || !s.startTime || !s.endTime || typeof s.duration !== 'number') return false;
+    if (!s.id || !s.startTime || typeof s.duration !== 'number') return false;
+    if (typeof s.startTime !== 'string') return false;
     const start = new Date(s.startTime as string);
-    const end = new Date(s.endTime as string);
-    if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
-    if (end.getTime() < start.getTime()) return false;
+    if (isNaN(start.getTime())) return false;
+
+    // endTime can be null (active) or a valid date string
+    if (s.endTime !== null && typeof s.endTime !== 'string') return false;
+    if (s.endTime !== null) {
+        const end = new Date(s.endTime as string);
+        if (isNaN(end.getTime())) return false;
+        // Ensure endTime >= startTime if provided
+        if (end.getTime() < start.getTime()) return false;
+    } else {
+        // If endTime is null, duration should be 0 (active session)
+        if (s.duration !== 0) return false;
+    }
     return true;
 }
 
@@ -109,15 +120,15 @@ export function ExportImportButtons() {
                 const imported = JSON.parse(content);
                 if (!Array.isArray(imported)) throw new Error("Data must be an array");
 
-                // Validate each item using the type guard
+                // Validate each item using the updated type guard
                 const valid = imported.every((item) => isValidSession(item));
                 if (!valid) throw new Error("Invalid session data structure");
 
-                // Now we know all items are ImportedSession, so we can cast and map
+                // Map to Session objects, converting date strings and handling null endTime
                 const sessions = (imported as ImportedSession[]).map((s) => ({
                     ...s,
                     startTime: new Date(s.startTime),
-                    endTime: new Date(s.endTime),
+                    endTime: s.endTime ? new Date(s.endTime) : null,
                 })) as Session[];
 
                 showConfirm(

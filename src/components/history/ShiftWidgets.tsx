@@ -1,4 +1,3 @@
-// src/components/history/ShiftWidgets.tsx
 import { formatDuration, calculateShiftTotals } from "@/lib/timer-utils";
 import useTimerStore from "@/store/timerStore";
 import type { Session } from "@/types";
@@ -9,7 +8,9 @@ const shiftRanges = ["00:00–12:00", "12:00–16:00", "16:00–20:00", "20:00�
 export function ShiftWidgets({ sessions }: { sessions?: Session[] }) {
     const history = useTimerStore((state) => state.history);
     const data = sessions ?? history;
-    const totals = calculateShiftTotals(data);
+    // Filter out active sessions before calculating totals
+    const completed = data.filter(s => s.endTime !== null);
+    const totals = calculateShiftTotals(completed);
 
     return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">

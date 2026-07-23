@@ -10,23 +10,32 @@ import {
 
 export function Dashboard() {
     const history = useTimerStore((state) => state.history);
+    const activeSession = useTimerStore((state) => state.activeSession);
+    const currentTime = useTimerStore((state) => state.time);
     const today = new Date();
 
-    // Today's sessions
-    const todaySessions = history.filter((session) =>
-        isSameDay(session.startTime, today)
+    // Today's sessions (completed)
+    const completedToday = history.filter(
+        (session) => session.endTime !== null && isSameDay(session.startTime, today)
     );
-    const todayTotal = todaySessions.reduce((sum, s) => sum + s.duration, 0);
+    const completedTodayTotal = completedToday.reduce((sum, s) => sum + s.duration, 0);
 
-    // Week: Monday to Sunday
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday
+    // Add active session if it started today
+    let todayTotal = completedTodayTotal;
+    if (activeSession && isSameDay(activeSession.startTime, today)) {
+        // Use the live time from store (which already includes active session)
+        todayTotal = completedTodayTotal + currentTime;
+    }
+
+    // Week: Monday to Sunday (completed sessions only)
+    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
     const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
     const weekTotals = weekDays.map((day) => {
         const dayTotal = history
-            .filter((session) => isSameDay(session.startTime, day))
+            .filter((session) => session.endTime !== null && isSameDay(session.startTime, day))
             .reduce((sum, s) => sum + s.duration, 0);
         return { day, total: dayTotal };
     });
@@ -42,10 +51,13 @@ export function Dashboard() {
                     <span className="font-mono font-medium text-foreground">
                         {formatDuration(todayTotal)}
                     </span>
+                    {activeSession && isSameDay(activeSession.startTime, today) && (
+                        <span className="ml-2 text-xs text-primary">(includes current session)</span>
+                    )}
                 </p>
             </div>
 
-            <ShiftWidgets sessions={todaySessions} />
+            <ShiftWidgets sessions={history.filter(s => s.endTime !== null)} />
 
             <div>
                 <h3 className="text-lg font-medium mb-2">This Week</h3>

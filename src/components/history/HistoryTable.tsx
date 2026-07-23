@@ -1,17 +1,19 @@
-// src/components/history/HistoryTable.tsx
 import { formatTime, formatDuration } from "@/lib/timer-utils";
 import useTimerStore from "@/store/timerStore";
 import type { Session } from "@/types";
 
 export function HistoryTable({ sessions }: { sessions?: Session[] }) {
     const history = useTimerStore((state) => state.history);
-    const data = sessions ?? history; // use prop if provided, else store
+    const data = sessions ?? history;
 
-    if (data.length === 0) {
-        return <p className="text-muted-foreground">No sessions recorded yet.</p>;
+    // Filter out active sessions (endTime === null)
+    const completedSessions = data.filter(s => s.endTime !== null);
+
+    if (completedSessions.length === 0) {
+        return <p className="text-muted-foreground">No completed sessions yet.</p>;
     }
 
-    const totalDuration = data.reduce((acc, session) => acc + session.duration, 0);
+    const totalDuration = completedSessions.reduce((acc, session) => acc + session.duration, 0);
 
     return (
         <div className="overflow-x-auto">
@@ -25,14 +27,14 @@ export function HistoryTable({ sessions }: { sessions?: Session[] }) {
                     </tr>
                 </thead>
                 <tbody>
-                    {data.map((session, index) => (
+                    {completedSessions.map((session, index) => (
                         <tr
                             key={session.id}
                             className="border-b border-border/50 hover:bg-muted/50 transition-colors"
                         >
                             <td className="py-3 px-4 text-muted-foreground">{index + 1}</td>
                             <td className="py-3 px-4">{formatTime(session.startTime)}</td>
-                            <td className="py-3 px-4">{formatTime(session.endTime)}</td>
+                            <td className="py-3 px-4">{formatTime(session.endTime!)}</td>
                             <td className="py-3 px-4 text-right font-mono">
                                 {formatDuration(session.duration)}
                             </td>

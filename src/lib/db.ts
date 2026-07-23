@@ -14,6 +14,8 @@ function getDB() {
                 if (!db.objectStoreNames.contains(STORE_NAME)) {
                     const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
                     store.createIndex('startTime', 'startTime');
+                    // Index to quickly find active sessions (endTime === null)
+                    store.createIndex('endTime', 'endTime');
                 }
             },
         });
@@ -49,4 +51,32 @@ export async function clearAllSessions(): Promise<void> {
 export async function deleteSessionById(id: string): Promise<void> {
     const db = await getDB();
     await db.delete(STORE_NAME, id);
+}
+
+// --- NEW FUNCTIONS ---
+
+export async function getActiveSession(): Promise<Session | undefined> {
+    const db = await getDB();
+    const index = db.transaction(STORE_NAME).store.index('endTime');
+    const active = await index.getAll(null);
+    return active[0];
+}
+
+export async function createSession(session: Session): Promise<void> {
+    const db = await getDB();
+    await db.add(STORE_NAME, session);
+}
+
+export async function updateSession(
+    id: string,
+    updates: Partial<Omit<Session, 'id'>>
+): Promise<void> {
+    const db = await getDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.store;
+    const existing = await store.get(id);
+    if (!existing) throw new Error(`Session ${id} not found`);
+    const updated = { ...existing, ...updates };
+    await store.put(updated);
+    await tx.done;
 }

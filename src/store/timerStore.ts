@@ -1,174 +1,187 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { getAllSessions, addSession, addSessions, clearAllSessions } from '@/lib/db';
+import {
+    getAllSessions,
+    createSession,
+    updateSession,
+    clearAllSessions,
+    addSessions,
+    deleteSessionById,
+} from '@/lib/db';
 import type { Session } from '@/types';
+import { getElapsed, startLoop, stopLoop } from '@/lib/timer-loop';
 
-// --- Module-level helpers for timer loop ---
-let rafId: number | null = null;
+// --- Module-level helper for concurrency ---
 let isProcessing = false;
-
-// --- LocalStorage keys ---
-const RUNNING_KEY = 'timerIsRunning';
-const START_TIME_KEY = 'timerStartTime';
-
-// Read initial state from localStorage
-const storedIsRunning = localStorage.getItem(RUNNING_KEY) === 'true';
-const storedStartTime = localStorage.getItem(START_TIME_KEY)
-    ? new Date(JSON.parse(localStorage.getItem(START_TIME_KEY)!))
-    : null;
-
-// Compute initial time if running
-let initialTime = 0;
-if (storedIsRunning && storedStartTime) {
-    initialTime = Math.floor((Date.now() - storedStartTime.getTime()) / 1000);
-}
 
 interface TimerStore {
     // State
     time: number;
     isRunning: boolean;
-    startTime: Date | null;
+    activeSession: Session | null;
     history: Session[];
     loading: boolean;
-    historyVersion: number; // <-- new: guard against stale updates
+    historyVersion: number;
 
     // Actions
-    loadHistory: () => Promise<void>;
-    startTimer: () => void;
-    stopTimer: () => void;
-    resetTimer: () => void;
+    loadData: () => Promise<void>;
+    startTimer: () => Promise<void>;
+    stopTimer: () => Promise<void>;
+    resetTimer: () => Promise<void>; // Now async and deletes the session
     replaceHistory: (newHistory: Session[]) => Promise<void>;
     clearHistory: () => Promise<void>;
 }
 
-// Store creation
 const useTimerStore = create<TimerStore>()(
     devtools(
         (set, get) => ({
-            time: initialTime,
-            isRunning: storedIsRunning,
-            startTime: storedStartTime,
+            time: 0,
+            isRunning: false,
+            activeSession: null,
             history: [],
             loading: true,
-            historyVersion: 0, // initial version
+            historyVersion: 0,
 
-            loadHistory: async () => {
+            // Load both history and active session on startup
+            loadData: async () => {
                 try {
                     const sessions = await getAllSessions();
-                    set({ history: sessions, loading: false });
+                    const active = sessions.find(s => s.endTime === null) || null;
+
+                    let initialTime = 0;
+                    if (active) {
+                        initialTime = getElapsed(active);
+                    }
+
+                    set({
+                        history: sessions,
+                        activeSession: active,
+                        isRunning: !!active,
+                        time: initialTime,
+                        loading: false,
+                    });
+
+                    // If there's an active session, start the UI loop
+                    if (active) {
+                        startLoop();
+                    }
                 } catch (err) {
-                    console.error('Failed to load history:', err);
-                    set({ history: [], loading: false });
+                    console.error('Failed to load data:', err);
+                    set({ history: [], activeSession: null, loading: false });
                 }
             },
 
-            startTimer: () => {
+            startTimer: async () => {
                 if (isProcessing) return;
                 isProcessing = true;
 
-                const now = new Date();
-                set({
-                    isRunning: true,
-                    startTime: now,
-                    time: 0,
-                });
-                localStorage.setItem(RUNNING_KEY, 'true');
-                localStorage.setItem(START_TIME_KEY, JSON.stringify(now.getTime()));
+                const { activeSession } = get();
 
-                if (!rafId) {
-                    const update = () => {
-                        const { isRunning, startTime } = get();
-                        if (isRunning && startTime) {
-                            const elapsed = Math.floor((Date.now() - startTime.getTime()) / 1000);
-                            set({ time: elapsed });
-                            rafId = requestAnimationFrame(update);
-                        } else {
-                            rafId = null;
-                        }
-                    };
-                    rafId = requestAnimationFrame(update);
-                }
-
-                isProcessing = false;
-            },
-
-            stopTimer: () => {
-                if (isProcessing) return;
-                isProcessing = true;
-
-                const { isRunning, startTime, historyVersion } = get();
-                if (!isRunning || !startTime) {
+                // If there's already an active session, just ensure the loop is running
+                if (activeSession) {
+                    startLoop(); // safe, no-op if already running
                     isProcessing = false;
                     return;
                 }
 
-                const endTime = new Date();
-                const duration = Math.floor((endTime.getTime() - startTime.getTime()) / 1000);
+                // Create a new session in the database
+                const now = new Date();
+                const session: Session = {
+                    id: crypto.randomUUID(),
+                    startTime: now,
+                    endTime: null,
+                    duration: 0,
+                };
 
-                // Cancel animation loop
-                if (rafId) {
-                    cancelAnimationFrame(rafId);
-                    rafId = null;
+                try {
+                    await createSession(session);
+                    set((state) => ({
+                        activeSession: session,
+                        isRunning: true,
+                        time: 0,
+                        history: [...state.history, session],
+                        historyVersion: state.historyVersion + 1,
+                    }));
+                    startLoop();
+                } catch (err) {
+                    console.error('Failed to create session:', err);
+                } finally {
+                    isProcessing = false;
                 }
-
-                set({
-                    isRunning: false,
-                    startTime: null,
-                    time: 0,
-                });
-                localStorage.removeItem(RUNNING_KEY);
-                localStorage.removeItem(START_TIME_KEY);
-
-                // Save session to IndexedDB
-                if (duration > 0) {
-                    const session: Session = {
-                        id: crypto.randomUUID(),
-                        startTime,
-                        endTime,
-                        duration,
-                    };
-                    const versionAtStop = historyVersion; // capture current version
-                    addSession(session)
-                        .then(() => {
-                            // Only apply if history hasn't been replaced/cleared since stop
-                            set((state) => {
-                                if (state.historyVersion !== versionAtStop) {
-                                    // Stale update – discard
-                                    return {};
-                                }
-                                return {
-                                    history: [...state.history, session],
-                                    historyVersion: state.historyVersion + 1,
-                                };
-                            });
-                        })
-                        .catch(console.error);
-                } else {
-                    // No session to save, but we still increment version to mark a change
-                    set((state) => ({ historyVersion: state.historyVersion + 1 }));
-                }
-
-                isProcessing = false;
             },
 
-            resetTimer: () => {
+            stopTimer: async () => {
                 if (isProcessing) return;
                 isProcessing = true;
 
-                const { isRunning } = get();
-                if (isRunning) {
-                    if (rafId) {
-                        cancelAnimationFrame(rafId);
-                        rafId = null;
-                    }
-                    set({
-                        isRunning: false,
-                        startTime: null,
-                        time: 0,
+                const { activeSession } = get();
+                if (!activeSession) {
+                    isProcessing = false;
+                    return;
+                }
+
+                // Stop the UI loop
+                stopLoop();
+
+                const endTime = new Date();
+                const duration = Math.floor((endTime.getTime() - activeSession.startTime.getTime()) / 1000);
+
+                try {
+                    // Update the session in DB
+                    await updateSession(activeSession.id, { endTime, duration });
+
+                    // Update state: mark as not running, clear active, set time to 0
+                    set((state) => {
+                        const updatedHistory = state.history.map(s =>
+                            s.id === activeSession.id
+                                ? { ...s, endTime, duration }
+                                : s
+                        );
+                        return {
+                            activeSession: null,
+                            isRunning: false,
+                            time: 0,
+                            history: updatedHistory,
+                            historyVersion: state.historyVersion + 1,
+                        };
                     });
-                    localStorage.removeItem(RUNNING_KEY);
-                    localStorage.removeItem(START_TIME_KEY);
+                } catch (err) {
+                    console.error('Failed to stop timer:', err);
+                } finally {
+                    isProcessing = false;
+                }
+            },
+
+            // NEW: Reset = Delete the active session permanently
+            resetTimer: async () => {
+                if (isProcessing) return;
+                isProcessing = true;
+
+                const { activeSession } = get();
+
+                // 1. Stop the UI animation loop
+                stopLoop();
+
+                // 2. If there is an active session, delete it permanently from the database
+                if (activeSession) {
+                    try {
+                        await deleteSessionById(activeSession.id);
+
+                        // 3. Remove it from state and reset the display
+                        set((state) => ({
+                            activeSession: null,
+                            isRunning: false,
+                            time: 0,
+                            history: state.history.filter(s => s.id !== activeSession.id),
+                            historyVersion: state.historyVersion + 1,
+                        }));
+                    } catch (err) {
+                        console.error('Failed to delete active session:', err);
+                        // Still reset UI to avoid confusion
+                        set({ time: 0, isRunning: false, activeSession: null });
+                    }
                 } else {
+                    // If no active session, just reset the UI timer to 00:00
                     set({ time: 0 });
                 }
 
@@ -180,25 +193,33 @@ const useTimerStore = create<TimerStore>()(
                 if (newHistory.length > 0) {
                     await addSessions(newHistory);
                 }
-                set((state) => ({
+                stopLoop();
+                set({
                     history: newHistory,
-                    historyVersion: state.historyVersion + 1,
-                }));
+                    activeSession: null,
+                    isRunning: false,
+                    time: 0,
+                    historyVersion: get().historyVersion + 1,
+                });
             },
 
             clearHistory: async () => {
                 await clearAllSessions();
-                set((state) => ({
+                stopLoop();
+                set({
                     history: [],
-                    historyVersion: state.historyVersion + 1,
-                }));
+                    activeSession: null,
+                    isRunning: false,
+                    time: 0,
+                    historyVersion: get().historyVersion + 1,
+                });
             },
         }),
         { name: 'timer-store' }
     )
 );
 
-// Immediately load history
-useTimerStore.getState().loadHistory();
+// Immediately load data
+useTimerStore.getState().loadData();
 
 export default useTimerStore;

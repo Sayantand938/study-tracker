@@ -1,6 +1,7 @@
 import type { Session } from '@/types';
 
-export const formatTime = (date: Date) => {
+export const formatTime = (date: Date | null) => {
+    if (!date) return 'Ongoing';
     return date.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -27,7 +28,9 @@ export const getShift = (date: Date): number => {
 
 export const calculateShiftTotals = (history: Session[]): number[] => {
     const totals = [0, 0, 0, 0];
+    // Only include completed sessions (duration > 0 or endTime not null)
     history.forEach((session) => {
+        if (session.endTime === null) return; // skip active
         const shift = getShift(session.startTime);
         totals[shift - 1] += session.duration;
     });

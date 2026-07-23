@@ -12,8 +12,9 @@ export function History() {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
     const filteredHistory = useMemo(() => {
+        // Only completed sessions (endTime !== null) and match selected day
         return history.filter((session) =>
-            isSameDay(session.startTime, selectedDate)
+            session.endTime !== null && isSameDay(session.startTime, selectedDate)
         );
     }, [history, selectedDate]);
 
