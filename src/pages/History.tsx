@@ -1,13 +1,14 @@
 import { useState, useMemo } from "react";
 import { HistoryTable } from "@/components/history/HistoryTable";
 import { ShiftWidgets } from "@/components/history/ShiftWidgets";
-import { HourlyBreakdown } from "@/components/dashboard/HourlyBreakdown";
+import { HourlyBreakdown } from "@/components/history/HourlyBreakdown"; // fixed path
 import useTimerStore from "@/store/timerStore";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format, isSameDay } from "date-fns";
+import { formatDuration } from "@/lib/timer-utils";
 
 export function History() {
     const history = useTimerStore((state) => state.history);
@@ -19,9 +20,10 @@ export function History() {
         );
     }, [history, selectedDate]);
 
+    const totalDaySeconds = filteredHistory.reduce((sum, s) => sum + s.duration, 0);
+
     return (
         <div className="flex flex-col space-y-4 pb-4 sm:pb-6">
-            {/* Date picker header */}
             <div className="flex w-full items-center justify-center gap-2">
                 <span className="text-sm font-medium sm:text-base">
                     Sessions from {format(selectedDate, "MMM d, yyyy")}
@@ -42,16 +44,16 @@ export function History() {
                 </Popover>
             </div>
 
-            {/* Shift-wise distribution */}
             <div>
-                <h3 className="text-lg font-medium mb-2">Shift-wise Distribution</h3>
+                <h3 className="text-lg font-medium">Shift-wise Distribution</h3>
+                <p className="text-sm text-muted-foreground mb-2">
+                    Total: <span className="font-mono">{formatDuration(totalDaySeconds)}</span>
+                </p>
                 <ShiftWidgets sessions={filteredHistory} />
             </div>
 
-            {/* Hourly breakdown */}
             <HourlyBreakdown sessions={filteredHistory} date={selectedDate} />
 
-            {/* Session details */}
             <div>
                 <h3 className="text-lg font-medium mb-2">Session Details</h3>
                 <HistoryTable sessions={filteredHistory} />
