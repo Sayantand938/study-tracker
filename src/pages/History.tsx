@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 import { HistoryTable } from "@/components/history/HistoryTable";
+import { ShiftWidgets } from "@/components/history/ShiftWidgets";
+import { HourlyBreakdown } from "@/components/dashboard/HourlyBreakdown";
 import useTimerStore from "@/store/timerStore";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -12,26 +14,21 @@ export function History() {
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
     const filteredHistory = useMemo(() => {
-        return history.filter((session) =>
-            session.endTime !== null && isSameDay(session.startTime, selectedDate)
+        return history.filter(
+            (session) => session.endTime !== null && isSameDay(session.startTime, selectedDate)
         );
     }, [history, selectedDate]);
 
     return (
-        <div className="flex flex-col space-y-3">
+        <div className="flex flex-col space-y-4 pb-4 sm:pb-6">
+            {/* Date picker header */}
             <div className="flex w-full items-center justify-center gap-2">
                 <span className="text-sm font-medium sm:text-base">
                     Sessions from {format(selectedDate, "MMM d, yyyy")}
                 </span>
-
                 <Popover>
                     <PopoverTrigger>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9"
-                            aria-label="Pick a date"
-                        >
+                        <Button variant="outline" size="icon" className="h-9 w-9" aria-label="Pick a date">
                             <CalendarIcon className="h-4 w-4" />
                         </Button>
                     </PopoverTrigger>
@@ -45,7 +42,20 @@ export function History() {
                 </Popover>
             </div>
 
-            <HistoryTable sessions={filteredHistory} />
+            {/* Shift-wise distribution */}
+            <div>
+                <h3 className="text-lg font-medium mb-2">Shift-wise Distribution</h3>
+                <ShiftWidgets sessions={filteredHistory} />
+            </div>
+
+            {/* Hourly breakdown */}
+            <HourlyBreakdown sessions={filteredHistory} date={selectedDate} />
+
+            {/* Session details */}
+            <div>
+                <h3 className="text-lg font-medium mb-2">Session Details</h3>
+                <HistoryTable sessions={filteredHistory} />
+            </div>
         </div>
     );
 }

@@ -5,32 +5,29 @@ import { cn } from "@/lib/utils";
 import type { Session } from "@/types";
 
 interface HourlyBreakdownProps {
-    sessions: Session[];
-    activeSession: Session | null;
-    today: Date;
+    sessions: Session[];       // completed sessions for the selected date
+    date: Date;                // the date we're viewing
 }
 
-export function HourlyBreakdown({ sessions, activeSession, today }: HourlyBreakdownProps) {
-    const dayStart = startOfDay(today);
-    const dayEnd = endOfDay(today);
-    const todaysSessions = sessions.filter(
+export function HourlyBreakdown({ sessions, date }: HourlyBreakdownProps) {
+    const dayStart = startOfDay(date);
+    const dayEnd = endOfDay(date);
+
+    // Filter sessions that actually overlap this day (should already be filtered, but safe)
+    const daySessions = sessions.filter(
         (s) => s.startTime >= dayStart && s.startTime <= dayEnd
     );
-    if (activeSession && activeSession.startTime >= dayStart && activeSession.startTime <= dayEnd) {
-        if (!todaysSessions.find((s) => s.id === activeSession.id)) {
-            todaysSessions.push(activeSession);
-        }
-    }
 
     const hourlySlots: { hour: number; totalSeconds: number }[] = [];
     for (let h = 0; h < 24; h++) {
-        const slotStart = new Date(today);
+        const slotStart = new Date(date);
         slotStart.setHours(h, 0, 0, 0);
-        const slotEnd = new Date(today);
+        const slotEnd = new Date(date);
         slotEnd.setHours(h + 1, 0, 0, 0);
         let totalSec = 0;
-        for (const session of todaysSessions) {
-            const end = session.endTime || new Date();
+        for (const session of daySessions) {
+            // session.endTime is not null because we only pass completed sessions
+            const end = session.endTime!;
             const overlap = getOverlapSeconds(session.startTime, end, slotStart, slotEnd);
             totalSec += overlap;
         }
@@ -60,9 +57,9 @@ export function HourlyBreakdown({ sessions, activeSession, today }: HourlyBreakd
                             return (
                                 <tr key={slot.hour} className="border-b border-border/50 hover:bg-muted/50 transition-colors">
                                     <td className="py-2 px-4">
-                                        {format(new Date(today).setHours(slot.hour, 0, 0, 0), "HH:00")}
+                                        {format(new Date(date).setHours(slot.hour, 0, 0, 0), "HH:00")}
                                         {" – "}
-                                        {format(new Date(today).setHours(slot.hour + 1, 0, 0, 0), "HH:00")}
+                                        {format(new Date(date).setHours(slot.hour + 1, 0, 0, 0), "HH:00")}
                                     </td>
                                     <td className="py-2 px-4 text-right font-mono">{formatDuration(slot.totalSeconds)}</td>
                                     <td className="py-2 px-4 text-center">
