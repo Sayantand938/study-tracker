@@ -58,3 +58,17 @@ export function generateId(): string {
         return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     }
 }
+
+
+// Add this at the end of the file
+export function getOverlapSeconds(
+    sessionStart: Date,
+    sessionEnd: Date,
+    slotStart: Date,
+    slotEnd: Date
+): number {
+    const start = Math.max(sessionStart.getTime(), slotStart.getTime());
+    const end = Math.min(sessionEnd.getTime(), slotEnd.getTime());
+    if (end <= start) return 0;
+    return Math.floor((end - start) / 1000);
+}
