@@ -34,17 +34,16 @@ export function Settings() {
     };
 
     return (
-        <div className="space-y-6">
-            <h2 className="text-2xl font-medium">Settings</h2>
-
-            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+        <div className="space-y-4">
+            {/* Theme */}
+            <div className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p className="font-medium">Theme</p>
                     <p className="text-sm text-muted-foreground">
                         Switch between light and dark mode
                     </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={toggleTheme}>
+                <Button variant="outline" size="sm" onClick={toggleTheme} className="w-full sm:w-auto">
                     {theme === "dark" ? (
                         <>
                             <Sun className="mr-2 h-4 w-4" />
@@ -59,7 +58,8 @@ export function Settings() {
                 </Button>
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+            {/* Data */}
+            <div className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p className="font-medium">Data</p>
                     <p className="text-sm text-muted-foreground">
@@ -69,7 +69,8 @@ export function Settings() {
                 <ExportImportButtons />
             </div>
 
-            <div className="flex items-center justify-between rounded-lg border border-border p-4">
+            {/* Clear History */}
+            <div className="flex flex-col gap-3 rounded-lg border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p className="font-medium">Clear History</p>
                     <p className="text-sm text-muted-foreground">
@@ -81,6 +82,7 @@ export function Settings() {
                     size="sm"
                     onClick={() => setClearDialogOpen(true)}
                     disabled={history.length === 0}
+                    className="w-full sm:w-auto"
                 >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Clear

@@ -29,19 +29,28 @@ export function Timer() {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-3.5rem)] flex-col items-center justify-center">
-      {/* Timer display – now using .font-martian */}
-      <div className="text-8xl font-martian font-light tracking-wider select-none">
+    <div className="h-full w-full flex flex-col items-center justify-center px-4 overflow-hidden">
+      <div className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-martian font-light tracking-wider select-none">
         {formatTime(time)}
       </div>
-      <div className="mt-8 flex gap-4">
-        <Button variant="outline" size="lg" onClick={handleStartStop}>
-          {isRunning ? <Square className="mr-2 h-5 w-5" /> : <Play className="mr-2 h-5 w-5" />}
-          {isRunning ? "Stop" : "Start"}
+      <div className="mt-8 flex gap-6">
+        <Button
+          variant="outline"
+          size="lg"
+          className="h-14 w-14 rounded-full"
+          onClick={handleStartStop}
+          aria-label={isRunning ? "Stop timer" : "Start timer"}
+        >
+          {isRunning ? <Square className="h-7 w-7" /> : <Play className="h-7 w-7" />}
         </Button>
-        <Button variant="outline" size="lg" onClick={resetTimer}>
-          <RotateCcw className="mr-2 h-5 w-5" />
-          Reset
+        <Button
+          variant="outline"
+          size="lg"
+          className="h-14 w-14 rounded-full"
+          onClick={resetTimer}
+          aria-label="Reset timer"
+        >
+          <RotateCcw className="h-7 w-7" />
         </Button>
       </div>
     </div>

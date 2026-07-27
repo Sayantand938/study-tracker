@@ -10,6 +10,7 @@ import {
 } from '@/lib/db';
 import type { Session } from '@/types';
 import { getElapsed, startLoop, stopLoop } from '@/lib/timer-loop';
+import { generateId } from '@/lib/timer-utils'; // <-- imported
 
 // --- Module-level helper for concurrency ---
 let isProcessing = false;
@@ -27,7 +28,7 @@ interface TimerStore {
     loadData: () => Promise<void>;
     startTimer: () => Promise<void>;
     stopTimer: () => Promise<void>;
-    resetTimer: () => Promise<void>; // Now async and deletes the session
+    resetTimer: () => Promise<void>;
     replaceHistory: (newHistory: Session[]) => Promise<void>;
     clearHistory: () => Promise<void>;
 }
@@ -87,7 +88,7 @@ const useTimerStore = create<TimerStore>()(
                 // Create a new session in the database
                 const now = new Date();
                 const session: Session = {
-                    id: crypto.randomUUID(),
+                    id: generateId(), // <-- replaced crypto.randomUUID()
                     startTime: now,
                     endTime: null,
                     duration: 0,
@@ -152,7 +153,6 @@ const useTimerStore = create<TimerStore>()(
                 }
             },
 
-            // NEW: Reset = Delete the active session permanently
             resetTimer: async () => {
                 if (isProcessing) return;
                 isProcessing = true;

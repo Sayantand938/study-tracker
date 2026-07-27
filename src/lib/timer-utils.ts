@@ -36,3 +36,25 @@ export const calculateShiftTotals = (history: Session[]): number[] => {
     });
     return totals;
 };
+
+/**
+ * Generate a unique ID (UUID v4 compatible) using crypto.getRandomValues,
+ * with a fallback for older browsers.
+ */
+export function generateId(): string {
+    // Use crypto.getRandomValues if available
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        const arr = new Uint8Array(16);
+        crypto.getRandomValues(arr);
+        // Set version (4) and variant (RFC4122)
+        arr[6] = (arr[6] & 0x0f) | 0x40;
+        arr[8] = (arr[8] & 0x3f) | 0x80;
+        const hex = Array.from(arr)
+            .map(b => b.toString(16).padStart(2, '0'))
+            .join('');
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+    } else {
+        // Fallback: timestamp + random (not perfect but works for a local app)
+        return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    }
+}
