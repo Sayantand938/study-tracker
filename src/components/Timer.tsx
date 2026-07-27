@@ -30,7 +30,8 @@ export function Timer() {
 
   return (
     <div className="h-full w-full flex flex-col items-center justify-center px-4 overflow-hidden">
-      <div className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-martian font-light tracking-wider select-none">
+      {/* Timer display – now bold */}
+      <div className="text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-martian font-bold tracking-wider select-none">
         {formatTime(time)}
       </div>
       <div className="mt-8 flex gap-6">
